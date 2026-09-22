@@ -1,0 +1,58 @@
+name: Build Adriano DS2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: devkitpro/devkitarm:latest
+
+    steps:
+      - name: Recuperer le projet
+        uses: actions/checkout@v4
+
+      - name: Creer le projet
+        run: |
+          git clone --depth 1 https://github.com/devkitPro/nds-examples.git /tmp/nds-examples
+          mkdir -p source
+          cp /tmp/nds-examples/templates/arm9/Makefile Makefile
+
+          sed -i 's/^TARGET.*/TARGET := Adriano-DS2/' Makefile
+          sed -i 's/^SOURCES.*/SOURCES := source/' Makefile
+
+          cat > source/main.cpp <<'EOF'
+#include <nds.h>
+
+int main()
+{
+    consoleDemoInit();
+
+    while (1)
+    {
+        scanKeys();
+
+        consoleClear();
+
+        iprintf("\n");
+        iprintf("     ADRIANO DS2\n\n");
+        iprintf("     DEMARRAGE OK\n\n");
+        iprintf("     Jeu 2D en preparation\n");
+
+        swiWaitForVBlank();
+    }
+
+    return 0;
+}
+EOF
+
+      - name: Compiler
+        run: make
+
+      - name: Recuperer la ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: Adriano-DS2
+          path: Adriano-DS2.nds
